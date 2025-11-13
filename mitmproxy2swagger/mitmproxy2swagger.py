@@ -217,12 +217,7 @@ def main(override_args: Optional[Sequence[str]] = None):
                 headers_request = swagger_util.request_to_headers(
                     req.get_request_headers()
                 )
-                if headers_request is not None and len(headers_request) > 0:
-                    set_key_if_not_exists(
-                        swagger["paths"][path_template_to_set][method],
-                        "parameters",
-                        headers_request,
-                    )
+                params.extend(headers_request)
             if params is not None and len(params) > 0:
                 set_key_if_not_exists(
                     swagger["paths"][path_template_to_set][method], "parameters", params
