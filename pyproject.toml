@@ -1,10 +1,13 @@
 [tool.poetry]
-name = "mitmproxy2swagger"
-version = "0.14.0"
+name = "m2s"
+version = "0.14.1"
 description = ""
-authors = ["alufers <alufers@wp.pl>"]
+authors = ["z2y <jiyvn.liu@aliyun.com>"]
 readme = "README.md"
 license = "MIT"
+packages = [
+    { include = "mitmproxy2swagger" }
+]
 
 [tool.poetry.dependencies]
 python = "^3.10"
