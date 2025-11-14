@@ -379,6 +379,7 @@ def main(override_args: Optional[Sequence[str]] = None):
     # add suggested path templates
     # basically inspects urls and replaces segments containing only numbers with a parameter
     new_path_templates_with_suggestions = []
+    origin_paths = []
     for path in new_path_templates:
         # check if path contains number-only segments
         segments = path.split("/")
@@ -400,15 +401,23 @@ def main(override_args: Optional[Sequence[str]] = None):
             # prepend the suggested path to the new_path_templates list
             if suggested_path not in new_path_templates_with_suggestions:
                 new_path_templates_with_suggestions.append("ignore:" + suggested_path)
+            if path not in origin_paths:
+                origin_paths.add("ignore:" + path)
+        else:
+            new_path_templates_with_suggestions.append("ignore:"+ path)
 
-        if not has_param or not args.suppress_params:
-            new_path_templates_with_suggestions.append("ignore:" + path)
+    if not args.suppress_params:
+        new_path_templates_with_suggestions.extend(origin_paths)
+    else:
+        swagger["x-path-templates"][:] = [
+            p for p in swagger["x-path-templates"] 
+            if (p if p.startswith("ignore:") else f"ignore:{p}") not in origin_paths
+        ]
 
     # remove the ending comments not to add them twice
 
     # append the contents of new_path_templates_with_suggestions to swagger['x-path-templates']
-    for path in new_path_templates_with_suggestions:
-        swagger["x-path-templates"].append(path)
+    swagger["x-path-templates"].extend(new_path_templates_with_suggestions)
 
     # remove elements already generated
     swagger["x-path-templates"] = [
