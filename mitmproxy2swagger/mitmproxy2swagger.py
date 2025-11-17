@@ -103,6 +103,15 @@ def main(override_args: Optional[Sequence[str]] = None):
         action="store_true",
         help="Do not include API paths that have the original parameter values, only the ones with placeholders.",
     )
+    parser.add_argument(
+        "-eh",
+        "--excluded-headers",
+        action="extend",
+        nargs="+",
+        type=str,
+        default=[],
+        help="Exclude the headers in schema e.g. -eh 'sec-ch-ua-platform' 'cache-control'",
+    )
     args = parser.parse_args(override_args)
 
     try:
@@ -146,6 +155,7 @@ def main(override_args: Optional[Sequence[str]] = None):
         )
     # strip the trailing slash from the api prefix
     args.api_prefix = args.api_prefix.rstrip("/")
+    args.excluded_headers = [h.lower() for h in args.excluded_headers]
 
     if "servers" not in swagger or swagger["servers"] is None:
         swagger["servers"] = []
@@ -215,7 +225,8 @@ def main(override_args: Optional[Sequence[str]] = None):
             params = swagger_util.url_to_params(url, path_template_to_set)
             if args.headers:
                 headers_request = swagger_util.request_to_headers(
-                    req.get_request_headers()
+                    req.get_request_headers() if not args.excluded_headers else \
+                        {h:v for h,v in req.get_request_headers().items() if h.lower() not in args.excluded_headers}
                 )
                 params.extend(headers_request)
             if params is not None and len(params) > 0:
