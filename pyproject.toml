@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "m2s"
-version = "0.14.1"
+version = "0.14.1a"
 description = ""
 authors = ["z2y <jiyvn.liu@aliyun.com>"]
 readme = "README.md"
@@ -35,7 +35,7 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-mitmproxy2swagger = 'mitmproxy2swagger.mitmproxy2swagger:main'
+m2s = 'mitmproxy2swagger.mitmproxy2swagger:main'
 
 [tool.black]
 line-length = 88
