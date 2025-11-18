@@ -111,6 +111,13 @@ def main(override_args: Optional[Sequence[str]] = None):
         type=str,
         default=[],
         help="Exclude the headers in schema e.g. -eh 'sec-ch-ua-platform' 'cache-control'",
+    )   
+    parser.add_argument(
+        "-pn",
+        "--populate-new",
+        action="store_true",
+        default=False,
+        help="Populate doc for new endpoints in actual requests",
     )
     args = parser.parse_args(override_args)
 
@@ -203,10 +210,14 @@ def main(override_args: Optional[Sequence[str]] = None):
                     path_template_index = i
                     break
             if path_template_index is None:
-                if path in new_path_templates:
+                if path not in new_path_templates:
+                    new_path_templates.append(path)
+                if args.populate_new:
+                    path_templates.append(path)
+                    path_template_regexes.append(re.compile(path_to_regex(path)))
+                    path_template_index = -1
+                else:
                     continue
-                new_path_templates.append(path)
-                continue
 
             path_template_to_set = path_templates[path_template_index]
             set_key_if_not_exists(swagger["paths"], path_template_to_set, {})
@@ -386,6 +397,7 @@ def main(override_args: Optional[Sequence[str]] = None):
     # basically inspects urls and replaces segments containing only numbers with a parameter
     new_path_templates_with_suggestions = []
     origin_paths = []
+    path_prefix = "ignore:" if not args.populate_new else "new:"
     for path in new_path_templates:
         # check if path contains number-only segments
         segments = path.split("/")
@@ -406,11 +418,11 @@ def main(override_args: Optional[Sequence[str]] = None):
             suggested_path = "/".join(new_segments)
             # prepend the suggested path to the new_path_templates list
             if suggested_path not in new_path_templates_with_suggestions:
-                new_path_templates_with_suggestions.append("ignore:" + suggested_path)
+                new_path_templates_with_suggestions.append(path_prefix + suggested_path)
             if path not in origin_paths:
-                origin_paths.append("ignore:" + path)
+                origin_paths.append(path_prefix + path)
         else:
-            new_path_templates_with_suggestions.append("ignore:"+ path)
+            new_path_templates_with_suggestions.append(path_prefix+ path)
 
     if not args.suppress_params:
         new_path_templates_with_suggestions.extend(origin_paths)
@@ -442,7 +454,9 @@ def main(override_args: Optional[Sequence[str]] = None):
         swagger["x-path-templates"]
     )
     swagger["x-path-templates"].yaml_set_start_comment(
-        "Remove the ignore: prefix to generate an endpoint with its URL\nLines that are closer to the top take precedence, the matching is greedy"
+        "Remove the ignore: prefix to generate an endpoint with its URL\n"+
+        "Lines that are closer to the top take precedence, the matching is greedy\n"+
+        "An endpoint prefixed with `new:` is an endpoint with Doc being populated though it is not in x-path-templates"
     )
     # save the swagger file
     with open(args.output, "w") as f:
