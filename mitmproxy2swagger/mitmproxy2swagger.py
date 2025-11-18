@@ -192,6 +192,29 @@ def main(override_args: Optional[Sequence[str]] = None):
     new_path_templates = []
     path_template_regexes = [re.compile(path_to_regex(path)) for path in path_templates]
 
+    def is_param(param_value):
+        return args.param_regex.match(param_value) is not None
+
+    def get_suggested_path(path):
+        suggested_path = None
+        segments = path.split("/")
+        has_param = any(is_param(segment) for segment in segments)
+        if has_param:
+            # replace digit segments with {id}, {id1}, {id2} etc
+            new_segments = []
+            param_id = 0
+            for segment in segments:
+                if is_param(segment):
+                    param_name = "id" + str(param_id)
+                    if param_id == 0:
+                        param_name = "id"
+                    new_segments.append("{" + param_name + "}")
+                    param_id += 1
+                else:
+                    new_segments.append(segment)
+            suggested_path = "/".join(new_segments)
+        return suggested_path
+
     try:
         for req in capture_reader.captured_requests():
             # strip the api prefix from the url
@@ -213,7 +236,7 @@ def main(override_args: Optional[Sequence[str]] = None):
                 if path not in new_path_templates:
                     new_path_templates.append(path)
                 if args.populate_new:
-                    path_templates.append(path)
+                    path_templates.append(get_suggested_path(path) or path)
                     path_template_regexes.append(re.compile(path_to_regex(path)))
                     path_template_index = -1
                 else:
@@ -388,8 +411,6 @@ def main(override_args: Optional[Sequence[str]] = None):
             )
         sys.exit(1)
 
-    def is_param(param_value):
-        return args.param_regex.match(param_value) is not None
 
     new_path_templates.sort()
 
@@ -400,36 +421,22 @@ def main(override_args: Optional[Sequence[str]] = None):
     path_prefix = "ignore:" if not args.populate_new else "new:"
     for path in new_path_templates:
         # check if path contains number-only segments
-        segments = path.split("/")
-        has_param = any(is_param(segment) for segment in segments)
-        if has_param:
-            # replace digit segments with {id}, {id1}, {id2} etc
-            new_segments = []
-            param_id = 0
-            for segment in segments:
-                if is_param(segment):
-                    param_name = "id" + str(param_id)
-                    if param_id == 0:
-                        param_name = "id"
-                    new_segments.append("{" + param_name + "}")
-                    param_id += 1
-                else:
-                    new_segments.append(segment)
-            suggested_path = "/".join(new_segments)
-            # prepend the suggested path to the new_path_templates list
+        suggested_path = get_suggested_path(path)
+        # prepend the suggested path to the new_path_templates list
+        if suggested_path is not None:
             if suggested_path not in new_path_templates_with_suggestions:
                 new_path_templates_with_suggestions.append(path_prefix + suggested_path)
             if path not in origin_paths:
-                origin_paths.append(path_prefix + path)
+                origin_paths.append(path)
         else:
             new_path_templates_with_suggestions.append(path_prefix+ path)
 
     if not args.suppress_params:
-        new_path_templates_with_suggestions.extend(origin_paths)
+        new_path_templates_with_suggestions.extend([path_prefix+op for op in origin_paths])
     else:
         swagger["x-path-templates"][:] = [
             p for p in swagger["x-path-templates"] 
-            if (p if p.startswith("ignore:") else f"ignore:{p}") not in origin_paths
+            if p.split("ignore:")[-1].split("new:")[-1].strip() not in origin_paths
         ]
 
     # remove the ending comments not to add them twice
@@ -439,7 +446,7 @@ def main(override_args: Optional[Sequence[str]] = None):
 
     # remove elements already generated
     swagger["x-path-templates"] = [
-        path for path in swagger["x-path-templates"] if path not in swagger["paths"]
+        path for path in swagger["x-path-templates"] if path.split("ignore:")[-1].split("new:")[-1].strip() not in swagger["paths"]
     ]
 
     # remove duplicates while preserving order
