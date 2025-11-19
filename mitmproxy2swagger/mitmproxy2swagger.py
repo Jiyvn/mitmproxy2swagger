@@ -128,6 +128,13 @@ def main(override_args: Optional[Sequence[str]] = None):
         default=[],
         help="Exclude the request with specific method in schema e.g. -em 'OPTIONS' 'PUT'",
     )  
+    parser.add_argument(
+        "-w",
+        "--overwrite",
+        action="store_true",
+        help="Overwrite the whole swagger file",
+    )  
+    
     args = parser.parse_args(override_args)
 
     try:
@@ -151,14 +158,15 @@ def main(override_args: Optional[Sequence[str]] = None):
     swagger = None
 
     # try loading the existing swagger file
-    try:
-        base_dir = os.getcwd()
-        relative_path = args.output
-        abs_path = os.path.join(base_dir, relative_path)
-        with open(abs_path, "r") as f:
-            swagger = yaml.load(f)
-    except FileNotFoundError:
-        print("No existing swagger file found. Creating new one.")
+    if not args.overwrite:
+        try:
+            base_dir = os.getcwd()
+            relative_path = args.output
+            abs_path = os.path.join(base_dir, relative_path)
+            with open(abs_path, "r") as f:
+                swagger = yaml.load(f)
+        except FileNotFoundError:
+            print("No existing swagger file found. Creating new one.")
     if swagger is None:
         swagger = ruamel.yaml.comments.CommentedMap(
             {
