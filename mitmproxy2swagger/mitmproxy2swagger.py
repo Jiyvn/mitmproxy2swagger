@@ -446,7 +446,7 @@ def main(override_args: Optional[Sequence[str]] = None):
 
     # remove elements already generated
     swagger["x-path-templates"] = [
-        path for path in swagger["x-path-templates"] if path.split("ignore:")[-1].split("new:")[-1].strip() not in swagger["paths"]
+        path for path in swagger["x-path-templates"] if path.split("ignore:")[-1].strip() not in swagger["paths"]
     ]
 
     # remove duplicates while preserving order
