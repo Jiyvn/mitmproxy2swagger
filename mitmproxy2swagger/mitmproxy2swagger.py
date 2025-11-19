@@ -119,6 +119,15 @@ def main(override_args: Optional[Sequence[str]] = None):
         default=False,
         help="Populate doc for new endpoints in actual requests",
     )
+    parser.add_argument(
+        "-em",
+        "--excluded-methods",
+        action="extend",
+        nargs="+",
+        type=str,
+        default=[],
+        help="Exclude the request with specific method in schema e.g. -em 'OPTIONS' 'PUT'",
+    )  
     args = parser.parse_args(override_args)
 
     try:
@@ -163,6 +172,7 @@ def main(override_args: Optional[Sequence[str]] = None):
     # strip the trailing slash from the api prefix
     args.api_prefix = args.api_prefix.rstrip("/")
     args.excluded_headers = [h.lower() for h in args.excluded_headers]
+    args.excluded_methods = [h.lower() for h in args.excluded_methods]
 
     if "servers" not in swagger or swagger["servers"] is None:
         swagger["servers"] = []
@@ -233,14 +243,18 @@ def main(override_args: Optional[Sequence[str]] = None):
                     path_template_index = i
                     break
             if path_template_index is None:
-                if path not in new_path_templates:
-                    new_path_templates.append(path)
-                if args.populate_new:
-                    path_templates.append(get_suggested_path(path) or path)
-                    path_template_regexes.append(re.compile(path_to_regex(path)))
-                    path_template_index = -1
-                else:
-                    continue
+                if method not in args.excluded_methods:
+                    if path not in new_path_templates:
+                        new_path_templates.append(path)
+                    if args.populate_new:
+                        path_templates.append(get_suggested_path(path) or path)
+                        path_template_regexes.append(re.compile(path_to_regex(path)))
+                        path_template_index = -1
+                    else:
+                        continue
+            
+            if method in args.excluded_methods:
+                continue
 
             path_template_to_set = path_templates[path_template_index]
             set_key_if_not_exists(swagger["paths"], path_template_to_set, {})
