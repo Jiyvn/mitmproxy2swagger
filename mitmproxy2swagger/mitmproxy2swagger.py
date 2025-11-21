@@ -134,7 +134,14 @@ def main(override_args: Optional[Sequence[str]] = None):
         action="store_true",
         help="Overwrite the whole swagger file",
     )  
-    
+      
+    parser.add_argument(
+        "-q2p",
+        "--query-to-path",
+        type=str,
+        default=None,
+        help="Treat a specific query param as path to generate doc for each query endpoint, even though not compliant with swagger specification",
+    ) 
     args = parser.parse_args(override_args)
 
     try:
@@ -265,6 +272,14 @@ def main(override_args: Optional[Sequence[str]] = None):
                 continue
 
             path_template_to_set = path_templates[path_template_index]
+            params = swagger_util.url_to_params(url, path_template_to_set)
+            if args.query_to_path and urllib.parse.urlparse(url).query:
+                query_params = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
+                if args.query_to_path in query_params:
+                    query_param_value = query_params.get(args.query_to_path)[0]
+                    path_template_to_set = f"{path_template_to_set}?{args.query_to_path}={query_param_value}"
+                    params = [p for p in params if not (p["in"] == "query" and p['name'] == args.query_to_path)]
+
             set_key_if_not_exists(swagger["paths"], path_template_to_set, {})
 
             set_key_if_not_exists(
@@ -278,7 +293,7 @@ def main(override_args: Optional[Sequence[str]] = None):
                 },
             )
 
-            params = swagger_util.url_to_params(url, path_template_to_set)
+
             if args.headers:
                 headers_request = swagger_util.request_to_headers(
                     req.get_request_headers() if not args.excluded_headers else \
