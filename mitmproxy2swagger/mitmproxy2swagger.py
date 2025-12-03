@@ -133,7 +133,13 @@ def main(override_args: Optional[Sequence[str]] = None):
         "--overwrite",
         action="store_true",
         help="Overwrite the whole swagger file",
-    )  
+    )
+    parser.add_argument(
+        "-at",
+        "--add-tags",
+        action="store_true",
+        help="Add swagger tag to the endpoint automatically base on the url",
+    )
     
     args = parser.parse_args(override_args)
 
@@ -233,6 +239,9 @@ def main(override_args: Optional[Sequence[str]] = None):
             suggested_path = "/".join(new_segments)
         return suggested_path
 
+    common_prefix = None
+    ref_path = None
+
     try:
         for req in capture_reader.captured_requests():
             # strip the api prefix from the url
@@ -266,6 +275,14 @@ def main(override_args: Optional[Sequence[str]] = None):
 
             path_template_to_set = path_templates[path_template_index]
             set_key_if_not_exists(swagger["paths"], path_template_to_set, {})
+
+            if not ref_path:
+                ref_path = path_template_to_set
+                common_prefix = path_template_to_set
+            else:
+                path_prefix = os.path.commonpath([ref_path, path_template_to_set])
+                if len(path_prefix)<len(common_prefix):
+                    common_prefix = path_prefix
 
             set_key_if_not_exists(
                 swagger["paths"][path_template_to_set],
@@ -433,6 +450,14 @@ def main(override_args: Optional[Sequence[str]] = None):
             )
         sys.exit(1)
 
+    if args.add_tags and ref_path != common_prefix:
+        tags = set()
+        tag_index = len(common_prefix.split("/")) if common_prefix!="/" else 1
+        for path, p_value in swagger["paths"].items():
+            for method, m_value in p_value.items():
+                m_value["tags"] = [path.split("/")[tag_index]]
+                tags.add(m_value["tags"][0])
+        swagger["tags"] = [{"name": tag} for tag in tags]
 
     new_path_templates.sort()
 
