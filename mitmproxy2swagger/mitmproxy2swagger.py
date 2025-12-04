@@ -112,6 +112,11 @@ def main(override_args: Optional[Sequence[str]] = None):
         help="Do not include API paths that have the original parameter values, only the ones with placeholders.",
     )
     parser.add_argument(
+        "-t",
+        "--title",
+        help="Swagger document title",
+    )
+    parser.add_argument(
         "-eh",
         "--excluded-headers",
         action="extend",
@@ -188,7 +193,7 @@ def main(override_args: Optional[Sequence[str]] = None):
             {
                 "openapi": "3.0.0",
                 "info": {
-                    "title": args.input + " Mitmproxy2Swagger",
+                    "title": args.title or args.input + " Mitmproxy2Swagger",
                     "version": "1.0.0",
                 },
             }
