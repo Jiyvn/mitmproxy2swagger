@@ -55,6 +55,14 @@ def detect_input_format(file_path):
         return HarCaptureReader(file_path, progress_callback)
     return MitmproxyCaptureReader(file_path, progress_callback)
 
+def str2re(re_str):
+    return re.compile("^" + re_str + "$")
+
+def get_abs_path(path):
+    base_dir = os.getcwd()
+    abs_path = os.path.join(base_dir, path)
+    return abs_path
+
 
 def main(override_args: Optional[Sequence[str]] = None):
     parser = argparse.ArgumentParser(
@@ -140,11 +148,16 @@ def main(override_args: Optional[Sequence[str]] = None):
         action="store_true",
         help="Add swagger tag to the endpoint automatically base on the url",
     )
+    parser.add_argument(
+        "-tj",
+        "--tags-json",
+        help='The JSON file mapping URLs to tags, the content can be e.g. {"auth":["/api/auth/.+", "/api/account/.+"]}',
+    )
     
     args = parser.parse_args(override_args)
 
     try:
-        args.param_regex = re.compile("^" + args.param_regex + "$")
+        args.param_regex = str2re(args.param_regex)
     except re.error as e:
         print(
             f"{console_util.ANSI_RED}Invalid path parameter regex: {e}{console_util.ANSI_RESET}"
@@ -166,10 +179,7 @@ def main(override_args: Optional[Sequence[str]] = None):
     # try loading the existing swagger file
     if not args.overwrite:
         try:
-            base_dir = os.getcwd()
-            relative_path = args.output
-            abs_path = os.path.join(base_dir, relative_path)
-            with open(abs_path, "r") as f:
+            with open(get_abs_path(args.output), "r") as f:
                 swagger = yaml.load(f)
         except FileNotFoundError:
             print("No existing swagger file found. Creating new one.")
@@ -183,6 +193,15 @@ def main(override_args: Optional[Sequence[str]] = None):
                 },
             }
         )
+
+    if args.add_tags or args.tags_json:
+        swagger["tags"] = []
+
+    tags = None
+    if args.tags_json:
+        with open(get_abs_path(args.tags_json), "r") as f:
+            tags = json.load(f)
+
     # strip the trailing slash from the api prefix
     args.api_prefix = args.api_prefix.rstrip("/")
     args.excluded_headers = [h.lower() for h in args.excluded_headers]
@@ -288,12 +307,22 @@ def main(override_args: Optional[Sequence[str]] = None):
                 swagger["paths"][path_template_to_set],
                 method,
                 {
+                    "tags": [],
                     "summary": swagger_util.path_template_to_endpoint_name(
                         method, path_template_to_set
                     ),
                     "responses": {},
                 },
             )
+
+            if args.tags_json:
+                for tag, endpoints in tags.items():
+                    if any(str2re(ep).match(path_template_to_set) for ep in endpoints):
+                        if tag not in swagger["paths"][path_template_to_set][method]["tags"]:
+                            swagger["paths"][path_template_to_set][method]["tags"].append(tag)
+                            break
+                        if {'name': tag} not in swagger['tags']:
+                            swagger['tags'].append({'name': tag})
 
             params = swagger_util.url_to_params(url, path_template_to_set)
             if args.headers:
@@ -457,7 +486,8 @@ def main(override_args: Optional[Sequence[str]] = None):
             for method, m_value in p_value.items():
                 m_value["tags"] = [path.split("/")[tag_index]]
                 tags.add(m_value["tags"][0])
-        swagger["tags"] = [{"name": tag} for tag in tags]
+        swagger["tags"].extend([{"name": tag} for tag in tags])
+
 
     new_path_templates.sort()
 
