@@ -1,5 +1,14 @@
 # mitmproxy2swagger
 
+> Install and run with `m2s` instead. 
+> Forked [alufers/mitmproxy2swagger](https://github.com/alufers/mitmproxy2swagger) with some fixes and custom features:
+> - fix headers ecluding path or query params
+> - fix legacy path persisting with `--suppress-params`
+> - `--excluded-headers` to exclude specific request header
+> - `--populate-new` to allow populating document for the new endpoint immediately 
+> - `--excluded-methods` to exclude the request with specific methods
+> - `--overwrite` to overwrite the whole swagger file
+
 [![PyPI version](https://badge.fury.io/py/mitmproxy2swagger.svg)](https://badge.fury.io/py/mitmproxy2swagger)
 [![Arch Linux repository](https://img.shields.io/badge/archlinux-mitmproxy2swagger-blue)](https://archlinux.org/packages/extra/any/mitmproxy2swagger/)
 
