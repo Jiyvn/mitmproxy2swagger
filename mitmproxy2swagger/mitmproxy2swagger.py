@@ -488,6 +488,7 @@ def main(override_args: Optional[Sequence[str]] = None):
                 tags.add(m_value["tags"][0])
         swagger["tags"].extend([{"name": tag} for tag in tags])
 
+    swagger['tags'].sort(key=lambda d: list(d.values())[0]) 
 
     new_path_templates.sort()
 
