@@ -320,9 +320,9 @@ def main(override_args: Optional[Sequence[str]] = None):
                     if any(str2re(ep).match(path_template_to_set) for ep in endpoints):
                         if tag not in swagger["paths"][path_template_to_set][method]["tags"]:
                             swagger["paths"][path_template_to_set][method]["tags"].append(tag)
-                            break
                         if {'name': tag} not in swagger['tags']:
                             swagger['tags'].append({'name': tag})
+                        break
 
             params = swagger_util.url_to_params(url, path_template_to_set)
             if args.headers:
