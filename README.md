@@ -8,6 +8,11 @@
 > - `--populate-new` to allow populating document for the new endpoint immediately 
 > - `--excluded-methods` to exclude the request with specific methods
 > - `--overwrite` to overwrite the whole swagger file
+> - `--add-tags` to add tags automatically based on endpoint discrepancies
+> - `--tags-json` to add tags according to JSON mapping
+> - `--title` to specify document title i.e. `info.title`
+
+</br>
 
 [![PyPI version](https://badge.fury.io/py/mitmproxy2swagger.svg)](https://badge.fury.io/py/mitmproxy2swagger)
 [![Arch Linux repository](https://img.shields.io/badge/archlinux-mitmproxy2swagger-blue)](https://archlinux.org/packages/extra/any/mitmproxy2swagger/)
