@@ -1,7 +1,7 @@
 # mitmproxy2swagger
 
-> Install and run with `m2s` instead. 
-> Forked [alufers/mitmproxy2swagger](https://github.com/alufers/mitmproxy2swagger) with some fixes and custom features:
+> Install and run with `m2s` instead. It is for specific purposes, and might be not reverse-engineer compliant. For pure reverse engineering, please refer to [alufers/mitmproxy2swagger](https://github.com/alufers/mitmproxy2swagger).
+> Some fixes and custom features:
 > - fix headers ecluding path or query params
 > - fix legacy path persisting with `--suppress-params`
 > - `--excluded-headers` to exclude specific request header
@@ -11,6 +11,7 @@
 > - `--add-tags` to add tags automatically based on endpoint discrepancies
 > - `--tags-json` to add tags according to JSON mapping
 > - `--title` to specify document title i.e. `info.title`
+> - rough support for Basic/Bearer Autorization
 
 </br>
 
