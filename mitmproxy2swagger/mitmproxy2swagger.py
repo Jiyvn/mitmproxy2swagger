@@ -117,13 +117,34 @@ def main(override_args: Optional[Sequence[str]] = None):
         help="Swagger document title",
     )
     parser.add_argument(
-        "-eh",
-        "--excluded-headers",
+        "-Xr",
+        "--x-request-headers",
         action="extend",
         nargs="+",
         type=str,
         default=[],
-        help="Exclude the headers in schema e.g. -eh 'sec-ch-ua-platform' 'cache-control'",
+        help="Exclude the request headers e.g. -eh 'sec-ch-ua-platform' 'cache-control'",
+    )   
+    parser.add_argument(
+        "-Xs",
+        "--x-response-headers",
+        action="extend",
+        nargs="+",
+        type=str,
+        default=[],
+        help="Exclude the request headers e.g. -eh 'sec-ch-ua-platform' 'cache-control'",
+    )   
+    parser.add_argument(
+        "-Nr",
+        "--no-request-header",
+        action="store_true",
+        help="Exclude all request headers",
+    )   
+    parser.add_argument(
+        "-Ns",
+        "--no-response-header",
+        action="store_true",
+        help="Exclude all response headers",
     )   
     parser.add_argument(
         "-pn",
@@ -133,8 +154,8 @@ def main(override_args: Optional[Sequence[str]] = None):
         help="Populate doc for new endpoints in actual requests",
     )
     parser.add_argument(
-        "-em",
-        "--excluded-methods",
+        "-Xm",
+        "--x-methods",
         action="extend",
         nargs="+",
         type=str,
@@ -209,8 +230,9 @@ def main(override_args: Optional[Sequence[str]] = None):
 
     # strip the trailing slash from the api prefix
     args.api_prefix = args.api_prefix.rstrip("/")
-    args.excluded_headers = [h.lower() for h in args.excluded_headers]
-    args.excluded_methods = [h.lower() for h in args.excluded_methods]
+    args.x_request_headers = [h.lower() for h in args.x_request_headers]
+    args.x_response_headers = [h.lower() for h in args.x_response_headers]
+    args.x_methods = [h.lower() for h in args.x_methods]
 
     if "servers" not in swagger or swagger["servers"] is None:
         swagger["servers"] = []
@@ -284,7 +306,7 @@ def main(override_args: Optional[Sequence[str]] = None):
                     path_template_index = i
                     break
             if path_template_index is None:
-                if method not in args.excluded_methods:
+                if method not in args.x_methods:
                     if path not in new_path_templates:
                         new_path_templates.append(path)
                     if args.populate_new:
@@ -294,7 +316,7 @@ def main(override_args: Optional[Sequence[str]] = None):
                     else:
                         continue
             
-            if method in args.excluded_methods:
+            if method in args.x_methods:
                 continue
 
             path_template_to_set = path_templates[path_template_index]
@@ -330,10 +352,10 @@ def main(override_args: Optional[Sequence[str]] = None):
                         break
 
             params = swagger_util.url_to_params(url, path_template_to_set)
-            if args.headers:
+            if args.headers and not args.no_request_header:
                 headers_request = swagger_util.request_to_headers(
-                    req.get_request_headers() if not args.excluded_headers else \
-                        {h:v for h,v in req.get_request_headers().items() if h.lower() not in args.excluded_headers}
+                    req.get_request_headers() if not args.x_request_headers else \
+                        {h:v for h,v in req.get_request_headers().items() if h.lower() not in args.x_request_headers}
                 )
                 params.extend(headers_request)
             if params is not None and len(params) > 0:
@@ -433,11 +455,12 @@ def main(override_args: Optional[Sequence[str]] = None):
                         resp_data_to_set["content"][response_content_type][
                             "example"
                         ] = swagger_util.limit_example_size(response_parsed)
-                    if args.headers:
+                    if args.headers and not args.no_response_header:
                         resp_data_to_set["headers"] = swagger_util.response_to_headers(
-                            req.get_response_headers()
+                            req.get_response_headers() if not args.x_response_headers else \
+                                {h:v for h,v in req.get_response_headers().items() if h.lower() not in args.x_response_headers}
                         )
-
+                    
                     set_key_if_not_exists(
                         swagger["paths"][path_template_to_set][method]["responses"],
                         str(status),
