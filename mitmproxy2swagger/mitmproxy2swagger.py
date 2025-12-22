@@ -248,6 +248,9 @@ def main(override_args: Optional[Sequence[str]] = None):
 
     if "x-path-templates" not in swagger or swagger["x-path-templates"] is None:
         swagger["x-path-templates"] = []
+    
+    if "components" not in swagger or not swagger['components']:
+        swagger["components"] = {}
 
     path_templates = []
     for path in swagger["paths"]:
@@ -353,9 +356,19 @@ def main(override_args: Optional[Sequence[str]] = None):
 
             params = swagger_util.url_to_params(url, path_template_to_set)
             if args.headers and not args.no_request_header:
+                req_headers = req.get_request_headers()
+                auth_scheme = swagger_util.auth_to_security_scheme(req_headers)
+                if auth_scheme is not None:
+                    set_key_if_not_exists(swagger["components"], "securitySchemes", {})
+                    swagger["components"]["securitySchemes"].update(auth_scheme)
+                    set_key_if_not_exists(
+                        swagger["paths"][path_template_to_set][method],
+                        "security",
+                        [{list(auth_scheme.keys())[0]: []}]
+                    )
                 headers_request = swagger_util.request_to_headers(
-                    req.get_request_headers() if not args.x_request_headers else \
-                        {h:v for h,v in req.get_request_headers().items() if h.lower() not in args.x_request_headers}
+                    req_headers if not args.x_request_headers else \
+                        {h:v for h,v in req_headers.items() if h.lower() not in args.x_request_headers}
                 )
                 params.extend(headers_request)
             if params is not None and len(params) > 0:
