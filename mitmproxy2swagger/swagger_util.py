@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 import urllib
 import uuid
-from typing import Any, List
+from enum import Enum
+from typing import Any, List, Optional
 
 VERBS = [
     "add",
@@ -108,6 +109,44 @@ def response_to_headers(headers):
                 "schema": {"type": "number" if headers[key][0].isdigit() else "string"},
             }
     return header
+    
+
+AUTHORIZATION = "authorization"
+
+class AuthType(Enum):
+    HEADER_BEARER = 'Bearer'
+    HEADER_BASIC = 'Basic'
+
+
+def get_auth_type(headers: dict[str, List[Any]]) -> Optional[AuthType]:
+    auth_type = None
+    values = headers.get(AUTHORIZATION) or headers.get(AUTHORIZATION.capitalize())
+    if values:
+        for a in AuthType:
+            if values[0].startswith(f"{a.value} "):
+                auth_type = a
+                break
+    return auth_type
+
+
+def auth_to_security_scheme(headers):
+    scheme = None
+    match get_auth_type(headers):
+        case AuthType.HEADER_BEARER:
+            scheme = {
+                AuthType.HEADER_BEARER.value+"Auth": {
+                    "type": "http",
+                    "scheme": "bearer"
+                }
+            }
+        case AuthType.HEADER_BASIC:
+            scheme = {
+                AuthType.HEADER_BEARER.value+"Auth": {
+                    "type": "http",
+                    "scheme": "basic"
+                }
+            }
+    return scheme
 
 
 def value_to_schema(value):
