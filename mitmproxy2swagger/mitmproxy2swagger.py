@@ -586,7 +586,10 @@ def main(override_args: Optional[Sequence[str]] = None):
     )
     # save the swagger file
     with open(args.output, "w") as f:
-        yaml.dump(swagger, f)
+        if not os.path.splitext(args.output)[1] == '.json':
+            yaml.dump(swagger, f)
+        else:
+            json.dump(swagger, f, ensure_ascii=False, indent=4)
     print("Done!")
 
 
