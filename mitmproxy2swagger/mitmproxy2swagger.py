@@ -123,7 +123,7 @@ def main(override_args: Optional[Sequence[str]] = None):
         nargs="+",
         type=str,
         default=[],
-        help="Exclude the request headers e.g. -eh 'sec-ch-ua-platform' 'cache-control'",
+        help="Exclude the request headers e.g. -Xr 'sec-ch-ua-platform' 'cache-control'",
     )   
     parser.add_argument(
         "-Xs",
@@ -132,26 +132,26 @@ def main(override_args: Optional[Sequence[str]] = None):
         nargs="+",
         type=str,
         default=[],
-        help="Exclude the request headers e.g. -eh 'sec-ch-ua-platform' 'cache-control'",
+        help="Exclude the request headers e.g. -Xs 'referer' 'cache-control'",
     )   
     parser.add_argument(
         "-Nr",
         "--no-request-header",
         action="store_true",
-        help="Exclude all request headers",
+        help="Discard all request headers",
     )   
     parser.add_argument(
         "-Ns",
         "--no-response-header",
         action="store_true",
-        help="Exclude all response headers",
+        help="Discard all response headers",
     )   
     parser.add_argument(
         "-pn",
         "--populate-new",
         action="store_true",
         default=False,
-        help="Populate doc for new endpoints in actual requests",
+        help="Populate document for new endpoints",
     )
     parser.add_argument(
         "-Xm",
@@ -160,7 +160,7 @@ def main(override_args: Optional[Sequence[str]] = None):
         nargs="+",
         type=str,
         default=[],
-        help="Exclude the request with specific method in schema e.g. -em 'OPTIONS' 'PUT'",
+        help="Exclude the request with specific method in schema e.g. -Xm 'OPTIONS' 'PUT'",
     )  
     parser.add_argument(
         "-w",
